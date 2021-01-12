@@ -29,8 +29,15 @@ import (
 	"github.com/chaos-mesh/chaosd/pkg/core"
 )
 
+func (s *Server) StressAttackScheduler(attack *core.StressCommand) (string, error) {
+	uid := uuid.New().String()
+
+	return uid, nil
+}
+
 func (s *Server) StressAttack(attack *core.StressCommand) (string, error) {
 	var err error
+
 	uid := uuid.New().String()
 
 	if err := s.exp.Set(context.Background(), &core.Experiment{
@@ -80,8 +87,7 @@ func (s *Server) StressAttack(attack *core.StressCommand) (string, error) {
 	}
 	log.Info("stressors normalize", zap.String("arguments", stressorsStr))
 
-	cmd := bpm.DefaultProcessBuilder("stress-ng", strings.Fields(stressorsStr)...).
-		Build()
+	cmd := bpm.DefaultProcessBuilder("stress-ng", strings.Fields(stressorsStr)...).Build()
 
 	// Build will set SysProcAttr.Pdeathsig = syscall.SIGTERM, and so stress-ng will exit while chaosd exit
 	// so reset it here

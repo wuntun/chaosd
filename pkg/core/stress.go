@@ -17,6 +17,9 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/xhit/go-str2duration/v2"
+
+	chaosmesh "github.com/chaos-mesh/chaos-mesh/api/v1alpha1"
 	"github.com/pingcap/errors"
 )
 
@@ -26,16 +29,11 @@ const (
 )
 
 type StressCommand struct {
-	Action string
-
-	Load int
-
-	Workers int
-
-	Options []string
-
-	Duration time.Duration
-
+	Action      string
+	Load        int
+	Workers     int
+	Options     []string
+	Duration    time.Duration
 	StressngPid int32
 }
 
@@ -43,12 +41,22 @@ func (s *StressCommand) Validate() error {
 	if len(s.Action) == 0 {
 		return errors.New("action not provided")
 	}
-
 	return nil
 }
 
 func (s *StressCommand) String() string {
 	data, _ := json.Marshal(s)
-
 	return string(data)
+}
+
+func (s *StressCommand) ConvertFromStressChaos(stressChaos chaosmesh.StressChaos) *StressCommand {
+	duration, _ := str2duration.ParseDuration(*stressChaos.Spec.Duration)
+	return &StressCommand{
+		"cpu",
+		*stressChaos.Spec.Stressors.CPUStressor.Load,
+		stressChaos.Spec.Stressors.CPUStressor.Workers,
+		stressChaos.Spec.Stressors.CPUStressor.Options,
+		duration,
+		0,
+	}
 }

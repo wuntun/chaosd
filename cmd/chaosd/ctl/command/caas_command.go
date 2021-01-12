@@ -14,44 +14,53 @@
 package command
 
 import (
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/spf13/cobra"
 	"go.uber.org/fx"
 
 	"github.com/chaos-mesh/chaosd/pkg/config"
+	"github.com/chaos-mesh/chaosd/pkg/heartbeat"
 	"github.com/chaos-mesh/chaosd/pkg/server"
-	"github.com/chaos-mesh/chaosd/pkg/server/httpserver"
+	"github.com/chaos-mesh/chaosd/pkg/server/caas"
 	"github.com/chaos-mesh/chaosd/pkg/store"
 	"github.com/chaos-mesh/chaosd/pkg/version"
 )
 
-func NewServerCommand() *cobra.Command {
+var caasConf = config.Config{
+	Platform: config.LocalPlatform,
+	Runtime:  "docker",
+}
+
+func NewCaaSCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "server <option>",
+		Use:   "caas <option>",
 		Short: "Run Chaosd Server",
-		Run:   serverCommandFunc,
+		Run:   caasCommandFunc,
 	}
 
-	cmd.Flags().StringVarP(&conf.ListenHost, "host", "a", "0.0.0.0", "listen host of the Chaosd Server")
-	cmd.Flags().IntVarP(&conf.ListenPort, "port", "p", 31767, "listen port of the Chaosd Server")
+	cmd.Flags().IntVar(&conf.ExportPort, "export-port", 31767, "export port of the Chaosd Server")
+	cmd.Flags().StringVar(&conf.ExportHost, "export-host", "myhost", "hostname of the Chaosd Server")
+	cmd.Flags().IntVar(&conf.HeartbeatTime, "heartbeat-time", 10, "heartbeat time of the Chaosd Server")
+
 	cmd.Flags().BoolVar(&conf.EnablePprof, "enable-pprof", true, "enable pprof")
 	cmd.Flags().IntVar(&conf.PprofPort, "pprof-port", 31766, "listen port of the pprof server")
+
 	cmd.Flags().StringVarP(&conf.Runtime, "runtime", "r", "docker", "current container runtime")
 	cmd.Flags().StringVarP(&conf.Platform, "platform", "f", "local", "platform to deploy, default: local, supported platform: local, kubernetes")
 
 	return cmd
 }
 
-var conf = config.Config{
-	Platform: config.LocalPlatform,
-	Runtime:  "docker",
-}
-
-func serverCommandFunc(cmd *cobra.Command, args []string) {
-	if err := conf.Validate(); err != nil {
+func caasCommandFunc(cmd *cobra.Command, args []string) {
+	if err := caasConf.Validate(); err != nil {
 		ExitWithError(ExitBadArgs, err)
 	}
 
-	version.PrintVersionInfo("Chaosd Server")
+	version.PrintVersionInfo("CaaS")
 
 	app := fx.New(
 		fx.Provide(
@@ -61,7 +70,29 @@ func serverCommandFunc(cmd *cobra.Command, args []string) {
 		),
 		store.Module,
 		server.Module,
-		fx.Invoke(httpserver.Register),
+		fx.Invoke(caas.Register),
 	)
-	app.Run()
+	go app.Run()
+
+	// graceful shutdown
+	gracefulShutdown()
+}
+
+func gracefulShutdown() {
+	c := make(chan os.Signal)
+	signal.Notify(c, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	for s := range c {
+		switch s {
+		case syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT:
+			log.Println("stop with", s)
+			ExitFunc()
+			os.Exit(0)
+		default:
+		}
+	}
+}
+
+func ExitFunc() {
+	// logic
+	heartbeat.RegisterDone <- true
 }

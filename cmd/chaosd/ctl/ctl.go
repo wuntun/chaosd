@@ -28,6 +28,7 @@ var rootCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(
 		command.NewServerCommand(),
+		command.NewCaaSCommand(),
 		command.NewAttackCommand(),
 		command.NewRecoverCommand(),
 		command.NewSearchCommand(),

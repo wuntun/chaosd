@@ -21,6 +21,7 @@ import (
 	"github.com/chaos-mesh/chaos-mesh/pkg/chaosdaemon"
 
 	"github.com/chaos-mesh/chaosd/pkg/crclient"
+	"github.com/chaos-mesh/chaosd/pkg/server/caas"
 	"github.com/chaos-mesh/chaosd/pkg/server/chaosd"
 	"github.com/chaos-mesh/chaosd/pkg/server/httpserver"
 )
@@ -29,6 +30,7 @@ var Module = fx.Options(
 	fx.Provide(
 		chaosd.NewServer,
 		httpserver.NewServer,
+		caas.NewServer,
 		crclient.NewNodeCRClient,
 		os.Getpid,
 		chaosdaemon.NewDaemonServerWithCRClient,

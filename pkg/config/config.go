@@ -22,16 +22,18 @@ import (
 
 // Config defines the configuration for Chaosd.
 type Config struct {
-	flagSet *flag.FlagSet
-
-	Version bool
-
-	ListenPort  int
-	ListenHost  string
-	Runtime     string
-	EnablePprof bool
-	PprofPort   int
-	Platform    string
+	flagSet       *flag.FlagSet
+	Version       bool
+	ListenHost    string
+	ListenPort    int
+	ExportIP      string
+	ExportPort    int
+	ExportHost    string
+	HeartbeatTime int
+	EnablePprof   bool
+	PprofPort     int
+	Runtime       string
+	Platform      string
 }
 
 // Parse parses flag definitions from the argument list.
@@ -39,13 +41,12 @@ func (c *Config) Parse(arguments []string) error {
 	if err := c.flagSet.Parse(arguments); err != nil {
 		return errors.WithStack(err)
 	}
-
 	return c.Validate()
 }
 
 // Get the grpc address
 func (c *Config) Address() string {
-	return fmt.Sprintf("%s:%d", c.ListenHost, c.ListenPort)
+	return fmt.Sprintf("%s:%d", c.ExportIP, c.ExportPort)
 }
 
 // Validate is used to validate if some configurations are right.
@@ -53,11 +54,9 @@ func (c *Config) Validate() error {
 	if !checkPlatform(c.Platform) {
 		return errors.Errorf("platform %s is not supported", c.Platform)
 	}
-
 	if !checkRuntime(c.Runtime) {
 		return errors.Errorf("container runtime %s is not supported", c.Runtime)
 	}
-
 	return nil
 }
 
@@ -77,7 +76,6 @@ func checkPlatform(platform string) bool {
 			return true
 		}
 	}
-
 	return false
 }
 
@@ -89,6 +87,5 @@ func checkRuntime(runtime string) bool {
 			return true
 		}
 	}
-
 	return false
 }

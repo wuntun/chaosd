@@ -26,7 +26,7 @@ import (
 )
 
 func NewStore(db *dbstore.DB) core.ExperimentStore {
-	db.AutoMigrate(&core.Experiment{})
+	_ = db.AutoMigrate(&core.Experiment{})
 
 	es := &experimentStore{db}
 

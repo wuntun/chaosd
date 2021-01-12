@@ -30,18 +30,18 @@ const (
 
 // ExitWithError exits with error
 func ExitWithError(code int, err error) {
-	fmt.Fprintln(os.Stderr, "Error:", err)
+	_, _ = fmt.Fprintln(os.Stderr, "Error:", err)
 	os.Exit(code)
 }
 
 // NormalExit exits normally
 func NormalExit(msg string) {
-	fmt.Fprintln(os.Stdout, msg)
+	_, _ = fmt.Fprintln(os.Stdout, msg)
 	os.Exit(ExitSuccess)
 }
 
 // ExitWithMsg exits with error message
 func ExitWithMsg(code int, msg string) {
-	fmt.Fprintln(os.Stderr, msg)
+	_, _ = fmt.Fprintln(os.Stderr, msg)
 	os.Exit(code)
 }

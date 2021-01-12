@@ -90,3 +90,4 @@ $ chaosd attack stress mem -w 2 # stress 2 CPU and each cpu loads 100%
 ```bash
 $ chaosd recover 2c865e6f-299f-4adf-ab37-94dc4fb8fea6
 ```
+
