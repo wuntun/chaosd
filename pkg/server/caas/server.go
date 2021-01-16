@@ -15,16 +15,15 @@ package caas
 
 import (
 	"context"
-	glog "log"
 	"encoding/json"
 	"net/http"
-
+	
 	"github.com/gin-gonic/gin"
 	"github.com/pingcap/log"
 	"go.uber.org/zap"
-
+	
 	chaosmesh "github.com/chaos-mesh/chaos-mesh/api/v1alpha1"
-
+	
 	"github.com/chaos-mesh/chaosd/pkg/config"
 	"github.com/chaos-mesh/chaosd/pkg/core"
 	"github.com/chaos-mesh/chaosd/pkg/heartbeat"
@@ -91,12 +90,11 @@ func (s *httpServer) createStressAttack(c *gin.Context) {
 		return
 	}
 	stressChaosJSON, _ := json.Marshal(stressChaos)
-	glog.Println("stress chaos data", string(stressChaosJSON))
+	log.Info("chaos data", zap.String("stress chaos json", string(stressChaosJSON)))
 
 	attack := stressCommand.ConvertFromStressChaos(stressChaos)
 
-	// uid, err := s.chaos.StressAttackScheduler(attack)
-	uid, err := s.chaos.StressAttack(attack)
+	uid, err := s.chaos.StressAttackScheduler(attack)
 	if err != nil {
 		_ = c.AbortWithError(http.StatusInternalServerError, utils.ErrInternalServer.WrapWithNoMessage(err))
 		return
@@ -125,7 +123,7 @@ func (s *httpServer) ListAttack(c *gin.Context) {
 	}
 
 	chaosListJSON, _ := json.Marshal(chaosList)
-	glog.Println("chaos list", string(chaosListJSON))
+	log.Info("chaos data", zap.String("list", string(chaosListJSON)))
 
 	c.JSON(http.StatusOK, chaosList)
 }
