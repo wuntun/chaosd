@@ -52,7 +52,7 @@ func (s *Server) StressAttackScheduler(attack *core.StressCommand) (string, erro
 		// done experiment
 		if err != nil {
 			s.exp.Update(context.Background(), uid, core.Error, err.Error(), attack.String())
-			log.Error("failed to update experiment", zap.Error(err))
+			log.Error("do stress experiment failed.", zap.Error(err))
 		} else {
 			s.exp.Update(context.Background(), uid, core.Success, "", attack.String())
 		}
