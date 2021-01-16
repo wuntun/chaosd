@@ -58,6 +58,8 @@ func (s *Server) StressAttackScheduler(attack *core.StressCommand) (string, erro
 	})
 	if err := s.exp.SetTask(uid, task, core.Running);err != nil {
 		log.Warn(err.Error())
+	} else {
+		log.Info("Set Task success.")
 	}
 
 	return uid, nil
