@@ -53,8 +53,12 @@ func (s *StressCommand) String() string {
 
 func (s *StressCommand) ConvertFromStressChaos(stressChaos chaosmesh.StressChaos) *StressCommand {
 	duration, _ := str2duration.ParseDuration(*stressChaos.Spec.Duration)
-	cronArray := strings.Split(stressChaos.Spec.Scheduler.Cron, " ")
-	cron, _ := str2duration.ParseDuration(cronArray[1])
+	var cron time.Duration = time.Duration(0)
+	if stressChaos.Spec.Duration != nil {
+		cronArray := strings.Split(stressChaos.Spec.Scheduler.Cron, " ")
+		cron, _ = str2duration.ParseDuration(cronArray[1])
+	}
+
 	return &StressCommand{
 		"cpu",
 		*stressChaos.Spec.Stressors.CPUStressor.Load,

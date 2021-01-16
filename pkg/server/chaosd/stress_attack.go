@@ -59,25 +59,26 @@ func (s *Server) StressAttackScheduler(attack *core.StressCommand) (string, erro
 
 // DoStressAttack will do stressAttack
 func (s *Server) DoStressAttack(uid string, attack *core.StressCommand) (string, error) {
-	var e error = nil
-
-	s.tw.Add(attack.Duration, func() {
-		err := s.DoRecoverStressAttack(uid, attack)
-		if err != nil {
-			status, _ := s.exp.GetStatus(uid)
-			if status == core.Destroyed {
-				return
+	if attack.CronInterval != 0 {
+		var e error = nil
+		s.tw.Add(attack.Duration, func() {
+			err := s.DoRecoverStressAttack(uid, attack)
+			if err != nil {
+				status, _ := s.exp.GetStatus(uid)
+				if status == core.Destroyed {
+					return
+				}
+				s.exp.Update(context.Background(), uid, core.Error, err.Error(), attack.String())
+				log.Error("do stress experiment recover failed.", zap.Error(err))
+				e = err
+			} else {
+				s.exp.Update(context.Background(), uid, core.Waiting, "", attack.String())
+				log.Info("waiting stress experiment.")
 			}
-			s.exp.Update(context.Background(), uid, core.Error, err.Error(), attack.String())
-			log.Error("do stress experiment recover failed.", zap.Error(err))
-			e = err
-		} else {
-			s.exp.Update(context.Background(), uid, core.Waiting, "", attack.String())
-			log.Info("waiting stress experiment.")
+		})
+		if e != nil {
+			return uid, e
 		}
-	})
-	if e != nil {
-		return uid, e
 	}
 
 	stressors := &v1alpha1.Stressors{}
