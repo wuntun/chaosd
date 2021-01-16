@@ -54,7 +54,7 @@ func (s *Server) StressAttackScheduler(attack *core.StressCommand) (string, erro
 			s.exp.Update(context.Background(), uid, core.Error, err.Error(), attack.String())
 			log.Error("do stress experiment failed.", zap.Error(err))
 		} else {
-			s.exp.Update(context.Background(), uid, core.Running, "", attack.String())
+			s.exp.Update(context.Background(), uid, core.Success, "", attack.String())
 			log.Info("running stress experiment.")
 		}
 	})
@@ -64,8 +64,6 @@ func (s *Server) StressAttackScheduler(attack *core.StressCommand) (string, erro
 // DoStressAttack will do stressAttack
 func (s *Server) DoStressAttack(uid string, attack *core.StressCommand) (string, error) {
 	var err error
-
-	s.exp.Update(context.Background(), uid, core.Running, "", attack.String())
 
 	stressors := &v1alpha1.Stressors{}
 	if attack.Action == core.StressCPUAction {
