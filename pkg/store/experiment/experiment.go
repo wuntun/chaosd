@@ -134,20 +134,33 @@ func (e *experimentStore) Update(_ context.Context, uid, status, msg string, com
 		Error
 }
 
-func (e *experimentStore) SetTask(uid string, task *timewheel.Task) error {
-	return e.db.
-		Model(core.Experiment{}).
-		Where("uid = ?", uid).
-		Updates(core.Experiment{Task:task}).
-		Error
+func (e *experimentStore) SetTask(uid string, task *timewheel.Task, tp string) error {
+	if tp == core.Running {
+		return e.db.
+			Model(core.Experiment{}).
+			Where("uid = ?", uid).
+			Updates(core.Experiment{RunningTask:task}).
+			Error
+	} else {
+		return e.db.
+			Model(core.Experiment{}).
+			Where("uid = ?", uid).
+			Updates(core.Experiment{RecoverTask:task}).
+			Error
+	}
+
 }
 
-func (e *experimentStore) GetTask(uid string) (*timewheel.Task, error) {
+func (e *experimentStore) GetTask(uid string, tp string) (*timewheel.Task, error) {
 	exp, err := e.FindByUid(context.Background(), uid)
 	if err != nil {
 		return nil, err
 	}
-	return exp.Task, nil
+	if tp == core.Running {
+		return exp.RunningTask, nil
+	} else {
+		return exp.RecoverTask, nil
+	}
 }
 
 func (e *experimentStore) GetStatus(uid string) (string, error) {

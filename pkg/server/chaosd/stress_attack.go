@@ -70,10 +70,10 @@ func (s *Server) DoStressAttack(uid string, attack *core.StressCommand) (string,
 			log.Info("waiting stress experiment.")
 		}
 	})
-	s.exp.SetTask(uid, task)
 	if e != nil {
 		return uid, e
 	}
+	s.exp.SetTask(uid, task, core.Destroyed)
 
 	stressors := &v1alpha1.Stressors{}
 	if attack.Action == core.StressCPUAction {
@@ -130,10 +130,10 @@ func (s *Server) DoRecoverStressAttack(uid string, attack *core.StressCommand) e
 			log.Info("running stress experiment.")
 		}
 	})
-	s.exp.SetTask(uid, task)
 	if e != nil {
 		return e
 	}
+	s.exp.SetTask(uid, task, core.Running)
 
 	proc, err := process.NewProcess(attack.StressngPid)
 	if err != nil {
@@ -233,9 +233,13 @@ func (s *Server) StressAttack(attack *core.StressCommand) (string, error) {
 }
 
 func (s *Server) RecoverStressAttack(uid string, attack *core.StressCommand) error {
-	task, _ := s.exp.GetTask(uid)
+	task, _ := s.exp.GetTask(uid, core.Running)
 	if task != nil {
-		task.Reset()
+		s.tw.Remove(task)
+	}
+	task, _ = s.exp.GetTask(uid, core.Destroyed)
+	if task != nil {
+		s.tw.Remove(task)
 	}
 
 	proc, err := process.NewProcess(attack.StressngPid)
