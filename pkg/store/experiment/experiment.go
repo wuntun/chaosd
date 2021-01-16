@@ -17,7 +17,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/rfyiamcool/go-timewheel"
 	"gorm.io/gorm"
 
 	perr "github.com/pkg/errors"
@@ -132,35 +131,6 @@ func (e *experimentStore) Update(_ context.Context, uid, status, msg string, com
 		Where("uid = ?", uid).
 		Updates(core.Experiment{Status: status, Message: msg, RecoverCommand: command}).
 		Error
-}
-
-func (e *experimentStore) SetTask(uid string, task *timewheel.Task, tp string) error {
-	if tp == core.Running {
-		return e.db.
-			Model(core.Experiment{}).
-			Where("uid = ?", uid).
-			Updates(core.Experiment{RunningTask:task}).
-			Error
-	} else {
-		return e.db.
-			Model(core.Experiment{}).
-			Where("uid = ?", uid).
-			Updates(core.Experiment{RecoverTask:task}).
-			Error
-	}
-
-}
-
-func (e *experimentStore) GetTask(uid string, tp string) (*timewheel.Task, error) {
-	exp, err := e.FindByUid(context.Background(), uid)
-	if err != nil {
-		return nil, err
-	}
-	if tp == core.Running {
-		return exp.RunningTask, nil
-	} else {
-		return exp.RecoverTask, nil
-	}
 }
 
 func (e *experimentStore) GetStatus(uid string) (string, error) {
