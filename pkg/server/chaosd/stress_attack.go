@@ -42,7 +42,7 @@ func (s *Server) StressAttackScheduler(attack *core.StressCommand) (string, erro
 		return "", errors.WithStack(err)
 	}
 
-	task := s.tw.AddCron(attack.CronInterval + attack.Duration, func() {
+	task := s.tw.AddCron(attack.Duration + attack.CronInterval, func() {
 		_, err := s.DoStressAttack(uid, attack)
 		if err != nil {
 			s.exp.Update(context.Background(), uid, core.Error, err.Error(), attack.String())
@@ -225,10 +225,7 @@ func (s *Server) StressAttack(attack *core.StressCommand) (string, error) {
 func (s *Server) RecoverStressAttack(uid string, attack *core.StressCommand) error {
 	task, _ := s.exp.GetTask(uid, core.Running)
 	if task != nil {
-		s.tw.Remove(task)
-	}
-	task, _ = s.exp.GetTask(uid, core.Destroyed)
-	if task != nil {
+		log.Info("remove task")
 		s.tw.Remove(task)
 	}
 
