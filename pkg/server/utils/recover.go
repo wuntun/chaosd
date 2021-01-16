@@ -34,7 +34,7 @@ func RecoverExp(expStore core.ExperimentStore, chaos *chaosd.Server, uid string)
 		return errors.Errorf("experiment %s not found", uid)
 	}
 
-	if exp.Status != core.Success && exp.Status != core.Running  {
+	if exp.Status != core.Success && exp.Status != core.Running && exp.Status != core.Waiting {
 		return errors.Errorf("can not recover %s experiment", exp.Status)
 	}
 
