@@ -20,6 +20,8 @@ import (
 
 const (
 	Created   = "created"
+	Waiting   = "Waiting"
+	Running   = "Running"
 	Success   = "success"
 	Error     = "error"
 	Destroyed = "destroyed"
@@ -40,6 +42,7 @@ type ExperimentStore interface {
 	FindByUid(ctx context.Context, uid string) (*Experiment, error)
 	Set(ctx context.Context, exp *Experiment) error
 	Update(ctx context.Context, uid, status, msg string, command string) error
+	GetStatus(uid string) (string, error)
 }
 
 // Experiment represents an experiment instance.

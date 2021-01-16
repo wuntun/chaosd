@@ -132,3 +132,11 @@ func (e *experimentStore) Update(_ context.Context, uid, status, msg string, com
 		Updates(core.Experiment{Status: status, Message: msg, RecoverCommand: command}).
 		Error
 }
+
+func (e *experimentStore) GetStatus(uid string) (string, error) {
+	exp, err := e.FindByUid(context.Background(), uid)
+	if err != nil {
+		return "", err
+	}
+	return exp.Status, nil
+}

@@ -15,6 +15,7 @@ package core
 
 import (
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/xhit/go-str2duration/v2"
@@ -35,6 +36,7 @@ type StressCommand struct {
 	Options     []string
 	Duration    time.Duration
 	StressngPid int32
+	CronInterval time.Duration
 }
 
 func (s *StressCommand) Validate() error {
@@ -51,6 +53,14 @@ func (s *StressCommand) String() string {
 
 func (s *StressCommand) ConvertFromStressChaos(stressChaos chaosmesh.StressChaos) *StressCommand {
 	duration, _ := str2duration.ParseDuration(*stressChaos.Spec.Duration)
+	var cron time.Duration = time.Duration(0)
+	if stressChaos.Spec.Scheduler != nil{
+		cronArray := strings.Split(stressChaos.Spec.Scheduler.Cron, " ")
+		if len(cronArray) == 2 {
+			cron, _ = str2duration.ParseDuration(cronArray[1])
+		}
+	}
+
 	return &StressCommand{
 		"cpu",
 		*stressChaos.Spec.Stressors.CPUStressor.Load,
@@ -58,5 +68,6 @@ func (s *StressCommand) ConvertFromStressChaos(stressChaos chaosmesh.StressChaos
 		stressChaos.Spec.Stressors.CPUStressor.Options,
 		duration,
 		0,
+		cron,
 	}
 }

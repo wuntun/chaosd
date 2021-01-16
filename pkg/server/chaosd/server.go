@@ -14,10 +14,19 @@
 package chaosd
 
 import (
+	"time"
+
 	"github.com/chaos-mesh/chaos-mesh/pkg/chaosdaemon"
 
 	"github.com/chaos-mesh/chaosd/pkg/config"
 	"github.com/chaos-mesh/chaosd/pkg/core"
+
+	timewheel "github.com/rfyiamcool/go-timewheel"
+)
+
+const (
+	Frequency = 1
+	SlotNum = 360
 )
 
 type Server struct {
@@ -27,6 +36,7 @@ type Server struct {
 	tcRule       core.TCRuleStore
 	conf         *config.Config
 	svr          *chaosdaemon.DaemonServer
+	tw           *timewheel.TimeWheel
 }
 
 func NewServer(
@@ -37,6 +47,8 @@ func NewServer(
 	tc core.TCRuleStore,
 	svr *chaosdaemon.DaemonServer,
 ) *Server {
+	tw, _ := timewheel.NewTimeWheel(Frequency * time.Second, SlotNum)
+	tw.Start()
 	return &Server{
 		conf:         conf,
 		exp:          exp,
@@ -44,5 +56,6 @@ func NewServer(
 		iptablesRule: iptables,
 		tcRule:       tc,
 		svr:          svr,
+		tw:           tw,
 	}
 }
