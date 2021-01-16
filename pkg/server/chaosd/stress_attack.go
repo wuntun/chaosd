@@ -23,6 +23,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/pingcap/errors"
 	"github.com/pingcap/log"
+	"github.com/rfyiamcool/go-timewheel"
 	"github.com/shirou/gopsutil/process"
 	"go.uber.org/zap"
 
@@ -55,14 +56,7 @@ func (s *Server) StressAttackScheduler(attack *core.StressCommand) (string, erro
 			log.Info("running stress experiment.")
 		}
 	})
-	if task == nil {
-		log.Warn("task is nil")
-	}
-	if err := s.exp.SetTask(uid, task, core.Running);err != nil {
-		log.Warn(err.Error())
-	} else {
-		log.Info("Set Task success.")
-	}
+	taskMap.Store(uid, task)
 
 	return uid, nil
 }
@@ -227,10 +221,13 @@ func (s *Server) StressAttack(attack *core.StressCommand) (string, error) {
 }
 
 func (s *Server) RecoverStressAttack(uid string, attack *core.StressCommand) error {
-	task, _ := s.exp.GetTask(uid, core.Running)
-	if task != nil {
-		log.Info("remove task")
-		s.tw.Remove(task)
+	if v, ok := taskMap.Load(uid); !ok {
+		return errors.New("get task faild, uid: " + uid)
+	} else {
+		if task, ok := v.(*timewheel.Task); ok {
+			log.Info("remove task success")
+			s.tw.Remove(task)
+		}
 	}
 
 	proc, err := process.NewProcess(attack.StressngPid)
