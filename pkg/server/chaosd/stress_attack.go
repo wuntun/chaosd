@@ -64,6 +64,10 @@ func (s *Server) DoStressAttack(uid string, attack *core.StressCommand) (string,
 	s.tw.Add(attack.Duration, func() {
 		err := s.DoRecoverStressAttack(uid, attack)
 		if err != nil {
+			status, _ := s.exp.GetStatus(uid)
+			if status == core.Destroyed {
+				return
+			}
 			s.exp.Update(context.Background(), uid, core.Error, err.Error(), attack.String())
 			log.Error("do stress experiment recover failed.", zap.Error(err))
 			e = err
