@@ -187,7 +187,7 @@ func (s *Server) RecoverStressAttack(uid string, attack *core.StressCommand) err
 	if err != nil {
 		return err
 	}
-	log.Info("recover stress attack", zap.String("name", procName))
+
 	if !strings.Contains(procName, "stress-ng") {
 		log.Warn("the process is not stress-ng, maybe it is killed by manual")
 		return nil
