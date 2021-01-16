@@ -234,17 +234,8 @@ func (s *Server) StressAttack(attack *core.StressCommand) (string, error) {
 
 func (s *Server) RecoverStressAttack(uid string, attack *core.StressCommand) error {
 	task, _ := s.exp.GetTask(uid)
-	s.tw.Remove(task)
-
-	status, err := s.exp.GetStatus(uid)
-	if err != nil {
-		return err
-	}
-	if strings.EqualFold(status, core.Waiting) {
-		if err := s.exp.Update(context.Background(), uid, core.Destroyed, "", attack.String()); err != nil {
-			return errors.WithStack(err)
-		}
-		return nil
+	if task != nil {
+		task.Reset()
 	}
 
 	proc, err := process.NewProcess(attack.StressngPid)
@@ -262,7 +253,12 @@ func (s *Server) RecoverStressAttack(uid string, attack *core.StressCommand) err
 		return nil
 	}
 
-	if err := proc.Kill(); err != nil {
+	status, err := s.exp.GetStatus(uid)
+	if err != nil {
+		return err
+	}
+
+	if err := proc.Kill(); err != nil && status != core.Waiting {
 		log.Error("the stress-ng process kill failed", zap.Error(err))
 		return err
 	}
