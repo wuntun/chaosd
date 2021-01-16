@@ -23,7 +23,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/pingcap/errors"
 	"github.com/pingcap/log"
-	"github.com/rfyiamcool/go-timewheel"
 	"github.com/shirou/gopsutil/process"
 	"go.uber.org/zap"
 
@@ -56,6 +55,9 @@ func (s *Server) StressAttackScheduler(attack *core.StressCommand) (string, erro
 			log.Info("running stress experiment.")
 		}
 	})
+	if task == nil {
+		log.Warn("task is nil")
+	}
 	if err := s.exp.SetTask(uid, task, core.Running);err != nil {
 		log.Warn(err.Error())
 	} else {
@@ -69,9 +71,7 @@ func (s *Server) StressAttackScheduler(attack *core.StressCommand) (string, erro
 func (s *Server) DoStressAttack(uid string, attack *core.StressCommand) (string, error) {
 	var e error = nil
 
-	var task *timewheel.Task
-	task = s.tw.Add(attack.Duration, func() {
-		s.exp.SetTask(uid, task, core.Destroyed)
+	s.tw.Add(attack.Duration, func() {
 		err := s.DoRecoverStressAttack(uid, attack)
 		if err != nil {
 			s.exp.Update(context.Background(), uid, core.Error, err.Error(), attack.String())
