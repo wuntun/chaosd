@@ -23,6 +23,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/pingcap/errors"
 	"github.com/pingcap/log"
+	"github.com/rfyiamcool/go-timewheel"
 	"github.com/shirou/gopsutil/process"
 	"go.uber.org/zap"
 
@@ -41,16 +42,21 @@ func (s *Server) StressAttackScheduler(attack *core.StressCommand) (string, erro
 		return "", errors.WithStack(err)
 	}
 
-	_, err := s.DoStressAttack(uid, attack)
-	log.Info("call DoStressAttack()")
-	// done experiment
-	if err != nil {
-		s.exp.Update(context.Background(), uid, core.Error, err.Error(), attack.String())
-		log.Error("do stress experiment failed.", zap.Error(err))
-	} else {
-		s.exp.Update(context.Background(), uid, core.Running, "", attack.String())
-		log.Info("running stress experiment.")
-	}
+	task := s.tw.AddCron(attack.CronInterval + attack.Duration, func() {
+		_, err := s.DoStressAttack(uid, attack)
+		if err != nil {
+			s.exp.Update(context.Background(), uid, core.Error, err.Error(), attack.String())
+			log.Error("do stress experiment failed.", zap.Error(err))
+			t, _ := s.exp.GetTask(uid, core.Running)
+			if t != nil {
+				s.tw.Remove(t)
+			}
+		} else {
+			s.exp.Update(context.Background(), uid, core.Running, "", attack.String())
+			log.Info("running stress experiment.")
+		}
+	})
+	s.exp.SetTask(uid, task, core.Running)
 
 	return uid, nil
 }
@@ -59,7 +65,9 @@ func (s *Server) StressAttackScheduler(attack *core.StressCommand) (string, erro
 func (s *Server) DoStressAttack(uid string, attack *core.StressCommand) (string, error) {
 	var e error = nil
 
-	task := s.tw.Add(attack.Duration, func() {
+	var task *timewheel.Task
+	task = s.tw.Add(attack.Duration, func() {
+		s.exp.SetTask(uid, task, core.Destroyed)
 		err := s.DoRecoverStressAttack(uid, attack)
 		if err != nil {
 			s.exp.Update(context.Background(), uid, core.Error, err.Error(), attack.String())
@@ -73,7 +81,6 @@ func (s *Server) DoStressAttack(uid string, attack *core.StressCommand) (string,
 	if e != nil {
 		return uid, e
 	}
-	s.exp.SetTask(uid, task, core.Destroyed)
 
 	stressors := &v1alpha1.Stressors{}
 	if attack.Action == core.StressCPUAction {
@@ -118,23 +125,6 @@ func (s *Server) DoStressAttack(uid string, attack *core.StressCommand) (string,
 }
 
 func (s *Server) DoRecoverStressAttack(uid string, attack *core.StressCommand) error {
-	var e error = nil
-	task := s.tw.Add(attack.CronInterval, func() {
-		_, err := s.DoStressAttack(uid, attack)
-		if err != nil {
-			s.exp.Update(context.Background(), uid, core.Error, err.Error(), attack.String())
-			log.Error("do stress experiment failed.", zap.Error(err))
-			e = err
-		} else {
-			s.exp.Update(context.Background(), uid, core.Running, "", attack.String())
-			log.Info("running stress experiment.")
-		}
-	})
-	if e != nil {
-		return e
-	}
-	s.exp.SetTask(uid, task, core.Running)
-
 	proc, err := process.NewProcess(attack.StressngPid)
 	if err != nil {
 		return err
