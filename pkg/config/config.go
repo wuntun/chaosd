@@ -26,14 +26,15 @@ type Config struct {
 	Version       bool
 	ListenHost    string
 	ListenPort    int
-	ExportIP      string
-	ExportPort    int
-	ExportHost    string
-	HeartbeatTime int
 	EnablePprof   bool
 	PprofPort     int
 	Runtime       string
 	Platform      string
+	ExportHost    string
+	ExportIP      string
+	ExportPort    int
+	HeartbeatAddr string
+	HeartbeatTime int
 }
 
 // Parse parses flag definitions from the argument list.
