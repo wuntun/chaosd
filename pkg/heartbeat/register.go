@@ -22,27 +22,38 @@ type Node struct {
 var RegisterDone chan bool
 
 func Register(conf *config.Config) {
-	RegisterDone = make(chan bool)
-	ticker := time.NewTicker(time.Duration(conf.HeartbeatTime) * time.Second)
-	go func() {
-		for {
-			select {
-			case <-RegisterDone:
-				ticker.Stop()
-				return
-			case <-ticker.C:
-				nodeInfo := &Node{
-					Kind:   "physic",
-					Name:   conf.ExportHost,
-					Config: fmt.Sprintf("http://%s:%d", conf.ExportIP, conf.ExportPort),
-				}
-				nodeInfoJSON, _ := json.Marshal(nodeInfo)
-				respData := HTTPPOST(conf.HeartbeatAddr, string(nodeInfoJSON))
-				respDataJSON, _ := json.Marshal(respData)
-				log.Println(string(respDataJSON))
-			}
-		}
-	}()
+	// RegisterDone = make(chan bool)
+
+	nodeInfo := &Node{
+		Kind:   "physic",
+		Name:   conf.ExportHost,
+		Config: fmt.Sprintf("http://%s:%d", conf.ExportIP, conf.ExportPort),
+	}
+	nodeInfoJSON, _ := json.Marshal(nodeInfo)
+	respData := HTTPPOST(conf.HeartbeatAddr, string(nodeInfoJSON))
+	respDataJSON, _ := json.Marshal(respData)
+	log.Println(string(respDataJSON))
+
+	// ticker := time.NewTicker(time.Duration(conf.HeartbeatTime) * time.Second)
+	// go func() {
+	// 	for {
+	// 		select {
+	// 		case <-RegisterDone:
+	// 			ticker.Stop()
+	// 			return
+	// 		case <-ticker.C:
+	// 			nodeInfo := &Node{
+	// 				Kind:   "physic",
+	// 				Name:   conf.ExportHost,
+	// 				Config: fmt.Sprintf("http://%s:%d", conf.ExportIP, conf.ExportPort),
+	// 			}
+	// 			nodeInfoJSON, _ := json.Marshal(nodeInfo)
+	// 			respData := HTTPPOST(conf.HeartbeatAddr, string(nodeInfoJSON))
+	// 			respDataJSON, _ := json.Marshal(respData)
+	// 			log.Println(string(respDataJSON))
+	// 		}
+	// 	}
+	// }()
 }
 
 func HTTPPOST(reqURL, reqData string) map[string]interface{} {

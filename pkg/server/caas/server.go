@@ -15,6 +15,7 @@ package caas
 
 import (
 	"context"
+	glog "log"
 	"encoding/json"
 	"net/http"
 
@@ -90,11 +91,12 @@ func (s *httpServer) createStressAttack(c *gin.Context) {
 		return
 	}
 	stressChaosJSON, _ := json.Marshal(stressChaos)
-	log.Info("chaos data", zap.String("stress chaos json", string(stressChaosJSON)))
+	glog.Println("stress chaos data", string(stressChaosJSON))
 
 	attack := stressCommand.ConvertFromStressChaos(stressChaos)
 
-	uid, err := s.chaos.StressAttackScheduler(attack)
+	// uid, err := s.chaos.StressAttackScheduler(attack)
+	uid, err := s.chaos.StressAttack(attack)
 	if err != nil {
 		_ = c.AbortWithError(http.StatusInternalServerError, utils.ErrInternalServer.WrapWithNoMessage(err))
 		return
@@ -123,7 +125,7 @@ func (s *httpServer) ListAttack(c *gin.Context) {
 	}
 
 	chaosListJSON, _ := json.Marshal(chaosList)
-	log.Info("chaos data", zap.String("list", string(chaosListJSON)))
+	glog.Println("chaos list", string(chaosListJSON))
 
 	c.JSON(http.StatusOK, chaosList)
 }

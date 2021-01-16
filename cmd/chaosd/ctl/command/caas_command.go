@@ -44,10 +44,10 @@ func NewCaaSCommand() *cobra.Command {
 
 	cmd.Flags().StringVarP(&conf.ListenHost, "host", "a", "0.0.0.0", "listen host of the Chaosd Server")
 	cmd.Flags().IntVarP(&conf.ListenPort, "port", "p", 31767, "listen port of the Chaosd Server")
+	cmd.Flags().StringVar(&conf.ExportHost, "export-host", "", "hostname of the Chaosd Server")
 	cmd.Flags().StringVar(&conf.ExportIP, "export-ip", "", "export ip of the Chaosd Server")
 	cmd.Flags().IntVar(&conf.ExportPort, "export-port", 31767, "export port of the Chaosd Server")
 	cmd.Flags().StringVar(&conf.HeartbeatAddr, "heartbeat-addr", "", "heartbeat add of the Chaosd Server")
-	cmd.Flags().IntVar(&conf.HeartbeatTime, "heartbeat-time", 10, "heartbeat time of the Chaosd Server")
 
 	cmd.Flags().BoolVar(&conf.EnablePprof, "enable-pprof", true, "enable pprof")
 	cmd.Flags().IntVar(&conf.PprofPort, "pprof-port", 31766, "listen port of the pprof server")
@@ -75,10 +75,10 @@ func caasCommandFunc(cmd *cobra.Command, args []string) {
 		server.Module,
 		fx.Invoke(caas.Register),
 	)
-	go app.Run()
+	app.Run()
 
 	// graceful shutdown
-	gracefulShutdown()
+	// gracefulShutdown()
 }
 
 func gracefulShutdown() {
