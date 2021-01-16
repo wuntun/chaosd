@@ -226,6 +226,17 @@ func (s *Server) RecoverStressAttack(uid string, attack *core.StressCommand) err
 		}
 	}
 
+	status, err := s.exp.GetStatus(uid)
+	if err != nil {
+		return err
+	}
+	if status == core.Waiting {
+		if err := s.exp.Update(context.Background(), uid, core.Destroyed, "", attack.String()); err != nil {
+			return errors.WithStack(err)
+		}
+		return nil
+	}
+
 	proc, err := process.NewProcess(attack.StressngPid)
 	if err != nil {
 		return err
@@ -239,11 +250,6 @@ func (s *Server) RecoverStressAttack(uid string, attack *core.StressCommand) err
 	if !strings.Contains(procName, "stress-ng") {
 		log.Warn("the process is not stress-ng, maybe it is killed by manual")
 		return nil
-	}
-
-	status, err := s.exp.GetStatus(uid)
-	if err != nil {
-		return err
 	}
 
 	if err := proc.Kill(); err != nil && status != core.Waiting {
