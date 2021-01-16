@@ -41,29 +41,39 @@ func (s *Server) StressAttackScheduler(attack *core.StressCommand) (string, erro
 		return "", errors.WithStack(err)
 	}
 
-	if attack.Duration.Seconds() != 0 {
-		s.exp.Update(context.Background(), uid, core.Waited, "", attack.String())
+	_, err := s.DoStressAttack(uid, attack)
+	log.Info("call DoStressAttack()")
+	// done experiment
+	if err != nil {
+		s.exp.Update(context.Background(), uid, core.Error, err.Error(), attack.String())
+		log.Error("do stress experiment failed.", zap.Error(err))
+	} else {
+		s.exp.Update(context.Background(), uid, core.Running, "", attack.String())
+		log.Info("running stress experiment.")
 	}
 
-	s.tw.Add(attack.Duration , func() {
-		//do experiment
-		_, err := s.DoStressAttack(uid, attack)
-		log.Info("call DoStressAttack()")
-		// done experiment
-		if err != nil {
-			s.exp.Update(context.Background(), uid, core.Error, err.Error(), attack.String())
-			log.Error("do stress experiment failed.", zap.Error(err))
-		} else {
-			s.exp.Update(context.Background(), uid, core.Success, "", attack.String())
-			log.Info("running stress experiment.")
-		}
-	})
 	return uid, nil
 }
 
 // DoStressAttack will do stressAttack
 func (s *Server) DoStressAttack(uid string, attack *core.StressCommand) (string, error) {
-	var err error
+	var e error = nil
+
+	task := s.tw.Add(attack.Duration, func() {
+		err := s.DoRecoverStressAttack(uid, attack)
+		if err != nil {
+			s.exp.Update(context.Background(), uid, core.Error, err.Error(), attack.String())
+			log.Error("do stress experiment recover failed.", zap.Error(err))
+			e = err
+		} else {
+			s.exp.Update(context.Background(), uid, core.Waiting, "", attack.String())
+			log.Info("waiting stress experiment.")
+		}
+	})
+	s.exp.SetTask(uid, task)
+	if e != nil {
+		return uid, e
+	}
 
 	stressors := &v1alpha1.Stressors{}
 	if attack.Action == core.StressCPUAction {
@@ -105,6 +115,51 @@ func (s *Server) DoStressAttack(uid string, attack *core.StressCommand) (string,
 	attack.StressngPid = int32(cmd.Process.Pid)
 
 	return uid, nil
+}
+
+func (s *Server) DoRecoverStressAttack(uid string, attack *core.StressCommand) error {
+	var e error = nil
+	task := s.tw.Add(attack.CronInterval, func() {
+		_, err := s.DoStressAttack(uid, attack)
+		if err != nil {
+			s.exp.Update(context.Background(), uid, core.Error, err.Error(), attack.String())
+			log.Error("do stress experiment failed.", zap.Error(err))
+			e = err
+		} else {
+			s.exp.Update(context.Background(), uid, core.Waiting, "", attack.String())
+			log.Info("running stress experiment.")
+		}
+	})
+	s.exp.SetTask(uid, task)
+	if e != nil {
+		return e
+	}
+
+	proc, err := process.NewProcess(attack.StressngPid)
+	if err != nil {
+		return err
+	}
+
+	procName, err := proc.Name()
+	if err != nil {
+		return err
+	}
+
+	if !strings.Contains(procName, "stress-ng") {
+		log.Warn("the process is not stress-ng, maybe it is killed by manual")
+		return nil
+	}
+
+	if err := proc.Kill(); err != nil {
+		log.Error("the stress-ng process kill failed", zap.Error(err))
+		return err
+	}
+
+	if err := s.exp.Update(context.Background(), uid, core.Destroyed, "", attack.String()); err != nil {
+		return errors.WithStack(err)
+	}
+
+	return nil
 }
 
 func (s *Server) StressAttack(attack *core.StressCommand) (string, error) {
@@ -178,6 +233,9 @@ func (s *Server) StressAttack(attack *core.StressCommand) (string, error) {
 }
 
 func (s *Server) RecoverStressAttack(uid string, attack *core.StressCommand) error {
+	task, _ := s.exp.GetTask(uid)
+	s.tw.Remove(task)
+
 	proc, err := process.NewProcess(attack.StressngPid)
 	if err != nil {
 		return err

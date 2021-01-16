@@ -16,11 +16,14 @@ package core
 import (
 	"context"
 	"time"
+
+	timewheel "github.com/rfyiamcool/go-timewheel"
 )
 
 const (
 	Created   = "created"
-	Waited    = "Waiting"
+	Waiting   = "Waiting"
+	Running   = "Running"
 	Success   = "success"
 	Error     = "error"
 	Destroyed = "destroyed"
@@ -41,6 +44,8 @@ type ExperimentStore interface {
 	FindByUid(ctx context.Context, uid string) (*Experiment, error)
 	Set(ctx context.Context, exp *Experiment) error
 	Update(ctx context.Context, uid, status, msg string, command string) error
+	SetTask(uid string, task *timewheel.Task) error
+	GetTask(uid string) (*timewheel.Task, error)
 }
 
 // Experiment represents an experiment instance.
@@ -55,4 +60,5 @@ type Experiment struct {
 	Kind           string `json:"kind"`
 	Action         string `json:"action"`
 	RecoverCommand string `json:"recover_command"`
+	Task           *timewheel.Task
 }
