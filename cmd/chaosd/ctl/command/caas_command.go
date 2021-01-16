@@ -42,7 +42,8 @@ func NewCaaSCommand() *cobra.Command {
 		Run:   caasCommandFunc,
 	}
 
-	cmd.Flags().StringVar(&conf.ExportHost, "export-host", "", "hostname of the Chaosd Server")
+	cmd.Flags().StringVarP(&conf.ListenHost, "host", "a", "0.0.0.0", "listen host of the Chaosd Server")
+	cmd.Flags().IntVarP(&conf.ListenPort, "port", "p", 31767, "listen port of the Chaosd Server")
 	cmd.Flags().StringVar(&conf.ExportIP, "export-ip", "", "export ip of the Chaosd Server")
 	cmd.Flags().IntVar(&conf.ExportPort, "export-port", 31767, "export port of the Chaosd Server")
 	cmd.Flags().StringVar(&conf.HeartbeatAddr, "heartbeat-addr", "", "heartbeat add of the Chaosd Server")

@@ -47,7 +47,7 @@ func (c *Config) Parse(arguments []string) error {
 
 // Get the grpc address
 func (c *Config) Address() string {
-	return fmt.Sprintf("%s:%d", c.ExportIP, c.ExportPort)
+	return fmt.Sprintf("%s:%d", c.ListenHost, c.ListenPort)
 }
 
 // Validate is used to validate if some configurations are right.
