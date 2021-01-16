@@ -61,6 +61,6 @@ type Experiment struct {
 	Kind           string `json:"kind"`
 	Action         string `json:"action"`
 	RecoverCommand string `json:"recover_command"`
-	RunningTask    *timewheel.Task `gorm:"for"`
+	RunningTask    *timewheel.Task `gorm:"-"`
 	RecoverTask    *timewheel.Task `gorm:"-"`
 }
