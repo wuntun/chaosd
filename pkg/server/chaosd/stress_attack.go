@@ -42,7 +42,19 @@ func (s *Server) StressAttackScheduler(attack *core.StressCommand) (string, erro
 		return "", errors.WithStack(err)
 	}
 
-	task := s.tw.AddCron(attack.Duration + attack.CronInterval, func() {
+	if attack.CronInterval != 0 {
+		task := s.tw.AddCron(attack.Duration + attack.CronInterval, func() {
+			_, err := s.DoStressAttack(uid, attack)
+			if err != nil {
+				s.exp.Update(context.Background(), uid, core.Error, err.Error(), attack.String())
+				log.Error("do stress experiment failed.", zap.Error(err))
+			} else {
+				s.exp.Update(context.Background(), uid, core.Running, "", attack.String())
+				log.Info("running stress experiment.")
+			}
+		})
+		taskMap.Store(uid, task)
+	} else {
 		_, err := s.DoStressAttack(uid, attack)
 		if err != nil {
 			s.exp.Update(context.Background(), uid, core.Error, err.Error(), attack.String())
@@ -51,34 +63,38 @@ func (s *Server) StressAttackScheduler(attack *core.StressCommand) (string, erro
 			s.exp.Update(context.Background(), uid, core.Running, "", attack.String())
 			log.Info("running stress experiment.")
 		}
-	})
-	taskMap.Store(uid, task)
+	}
+
 
 	return uid, nil
 }
 
 // DoStressAttack will do stressAttack
 func (s *Server) DoStressAttack(uid string, attack *core.StressCommand) (string, error) {
-	if attack.CronInterval != 0 {
-		var e error = nil
-		s.tw.Add(attack.Duration, func() {
-			err := s.DoRecoverStressAttack(uid, attack)
-			if err != nil {
-				status, _ := s.exp.GetStatus(uid)
-				if status == core.Destroyed {
-					return
-				}
-				s.exp.Update(context.Background(), uid, core.Error, err.Error(), attack.String())
-				log.Error("do stress experiment recover failed.", zap.Error(err))
-				e = err
-			} else {
+	var e error = nil
+	s.tw.Add(attack.Duration, func() {
+		err := s.DoRecoverStressAttack(uid, attack)
+		if err != nil {
+			status, _ := s.exp.GetStatus(uid)
+			if status == core.Destroyed {
+				return
+			}
+			s.exp.Update(context.Background(), uid, core.Error, err.Error(), attack.String())
+			log.Error("do stress experiment recover failed.", zap.Error(err))
+			e = err
+		} else {
+			if attack.CronInterval != 0 {
 				s.exp.Update(context.Background(), uid, core.Waiting, "", attack.String())
 				log.Info("waiting stress experiment.")
+			} else {
+				s.exp.Update(context.Background(), uid, core.Success, "", attack.String())
+				log.Info("success stress experiment.")
 			}
-		})
-		if e != nil {
-			return uid, e
+
 		}
+	})
+	if e != nil {
+		return uid, e
 	}
 
 	stressors := &v1alpha1.Stressors{}
