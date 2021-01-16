@@ -56,7 +56,9 @@ func (s *StressCommand) ConvertFromStressChaos(stressChaos chaosmesh.StressChaos
 	var cron time.Duration = time.Duration(0)
 	if stressChaos.Spec.Duration != nil {
 		cronArray := strings.Split(stressChaos.Spec.Scheduler.Cron, " ")
-		cron, _ = str2duration.ParseDuration(cronArray[1])
+		if len(cronArray) == 2 {
+			cron, _ = str2duration.ParseDuration(cronArray[1])
+		}
 	}
 
 	return &StressCommand{
