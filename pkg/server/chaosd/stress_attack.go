@@ -234,7 +234,12 @@ func (s *Server) StressAttack(attack *core.StressCommand) (string, error) {
 }
 
 func (s *Server) RecoverStressAttack(uid string, attack *core.StressCommand) error {
-	if v, ok := taskMap.Load(uid); !ok {
+	status, err := s.exp.GetStatus(uid)
+	if err != nil {
+		return err
+	}
+
+	if v, ok := taskMap.Load(uid); !ok && (status == core.Waiting || status == core.Running) {
 		return errors.New("get task faild, uid: " + uid)
 	} else {
 		if task, ok := v.(*timewheel.Task); ok {
@@ -243,10 +248,6 @@ func (s *Server) RecoverStressAttack(uid string, attack *core.StressCommand) err
 		}
 	}
 
-	status, err := s.exp.GetStatus(uid)
-	if err != nil {
-		return err
-	}
 	if status == core.Waiting {
 		if err := s.exp.Update(context.Background(), uid, core.Destroyed, "", attack.String()); err != nil {
 			return errors.WithStack(err)
