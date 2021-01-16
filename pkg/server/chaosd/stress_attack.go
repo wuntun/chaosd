@@ -126,7 +126,7 @@ func (s *Server) DoRecoverStressAttack(uid string, attack *core.StressCommand) e
 			log.Error("do stress experiment failed.", zap.Error(err))
 			e = err
 		} else {
-			s.exp.Update(context.Background(), uid, core.Waiting, "", attack.String())
+			s.exp.Update(context.Background(), uid, core.Running, "", attack.String())
 			log.Info("running stress experiment.")
 		}
 	})
