@@ -54,7 +54,8 @@ func (s *Server) StressAttackScheduler(attack *core.StressCommand) (string, erro
 			s.exp.Update(context.Background(), uid, core.Error, err.Error(), attack.String())
 			log.Error("do stress experiment failed.", zap.Error(err))
 		} else {
-			s.exp.Update(context.Background(), uid, core.Success, "", attack.String())
+			s.exp.Update(context.Background(), uid, core.Running, "", attack.String())
+			log.Info("running stress experiment.")
 		}
 	})
 	return uid, nil
