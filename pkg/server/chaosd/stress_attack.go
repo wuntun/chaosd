@@ -31,6 +31,73 @@ import (
 
 func (s *Server) StressAttackScheduler(attack *core.StressCommand) (string, error) {
 	uid := uuid.New().String()
+	//create experiment
+	if err := s.exp.Set(context.Background(), &core.Experiment{
+		Uid:            uid,
+		Status:         core.Created,
+		Kind:           core.StressAttack,
+		RecoverCommand: attack.String(),
+	}); err != nil {
+		return "", errors.WithStack(err)
+	}
+
+	s.tw.Add(attack.Duration , func() {
+		//do experiment
+		_, err := s.DoStressAttack(uid, attack)
+		log.Info("call DoStressAttack()")
+		// done experiment
+		if err != nil {
+			s.exp.Update(context.Background(), uid, core.Error, err.Error(), attack.String())
+			log.Error("failed to update experiment", zap.Error(err))
+		} else {
+			s.exp.Update(context.Background(), uid, core.Success, "", attack.String())
+		}
+	})
+	return uid, nil
+}
+
+// DoStressAttack will do stressAttack
+func (s *Server) DoStressAttack(uid string, attack *core.StressCommand) (string, error) {
+	var err error
+
+	stressors := &v1alpha1.Stressors{}
+	if attack.Action == core.StressCPUAction {
+		stressors.CPUStressor = &v1alpha1.CPUStressor{
+			Stressor: v1alpha1.Stressor{
+				Workers: attack.Workers,
+			},
+			Load:    &attack.Load,
+			Options: attack.Options,
+		}
+	} else if attack.Action == core.StressMemAction {
+		stressors.MemoryStressor = &v1alpha1.MemoryStressor{
+			Stressor: v1alpha1.Stressor{
+				Workers: attack.Workers,
+			},
+			Options: attack.Options,
+		}
+	}
+
+	stressorsStr, err := stressors.Normalize()
+	if err != nil {
+		return "", err
+	}
+	log.Info("stressors normalize", zap.String("arguments", stressorsStr))
+
+	cmd := bpm.DefaultProcessBuilder("stress-ng", strings.Fields(stressorsStr)...).Build()
+
+	// Build will set SysProcAttr.Pdeathsig = syscall.SIGTERM, and so stress-ng will exit while chaosd exit
+	// so reset it here
+	cmd.Cmd.SysProcAttr = &syscall.SysProcAttr{}
+
+	backgroundProcessManager := bpm.NewBackgroundProcessManager()
+	err = backgroundProcessManager.StartProcess(cmd)
+	if err != nil {
+		return "", err
+	}
+	log.Info("Start stress-ng process successfully", zap.String("command", cmd.String()))
+
+	attack.StressngPid = int32(cmd.Process.Pid)
 
 	return uid, nil
 }
