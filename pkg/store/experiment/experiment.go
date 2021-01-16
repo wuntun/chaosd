@@ -149,3 +149,11 @@ func (e *experimentStore) GetTask(uid string) (*timewheel.Task, error) {
 	}
 	return exp.Task, nil
 }
+
+func (e *experimentStore) GetStatus(uid string) (string, error) {
+	exp, err := e.FindByUid(context.Background(), uid)
+	if err != nil {
+		return "", err
+	}
+	return exp.Status, nil
+}

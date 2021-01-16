@@ -236,6 +236,17 @@ func (s *Server) RecoverStressAttack(uid string, attack *core.StressCommand) err
 	task, _ := s.exp.GetTask(uid)
 	s.tw.Remove(task)
 
+	status, err := s.exp.GetStatus(uid)
+	if err != nil {
+		return err
+	}
+	if strings.EqualFold(status, core.Waiting) {
+		if err := s.exp.Update(context.Background(), uid, core.Destroyed, "", attack.String()); err != nil {
+			return errors.WithStack(err)
+		}
+		return nil
+	}
+
 	proc, err := process.NewProcess(attack.StressngPid)
 	if err != nil {
 		return err

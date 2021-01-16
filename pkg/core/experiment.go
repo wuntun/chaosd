@@ -46,6 +46,7 @@ type ExperimentStore interface {
 	Update(ctx context.Context, uid, status, msg string, command string) error
 	SetTask(uid string, task *timewheel.Task) error
 	GetTask(uid string) (*timewheel.Task, error)
+	GetStatus(uid string) (string, error)
 }
 
 // Experiment represents an experiment instance.
