@@ -135,12 +135,8 @@ func (s *Server) DoRecoverStressAttack(uid string, attack *core.StressCommand) e
 	}
 
 	if err := proc.Kill(); err != nil {
-		log.Error("the stress-ng process kill failed", zap.Error(err))
+		log.Warn("the stress-ng process kill failed", zap.Error(err))
 		return err
-	}
-
-	if err := s.exp.Update(context.Background(), uid, core.Destroyed, "", attack.String()); err != nil {
-		return errors.WithStack(err)
 	}
 
 	return nil
