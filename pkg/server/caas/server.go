@@ -37,7 +37,6 @@ type httpServer struct {
 	chaos  *chaosd.Server
 	exp    core.ExperimentStore
 	engine *gin.Engine
-
 }
 
 func NewServer(conf *config.Config, chaos *chaosd.Server, exp core.ExperimentStore) *httpServer {
