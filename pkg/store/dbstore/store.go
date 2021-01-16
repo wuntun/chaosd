@@ -27,7 +27,10 @@ import (
 	"github.com/chaos-mesh/chaosd/pkg/utils"
 )
 
-const dataFile = "chaosd.dat"
+const (
+	dataFile = "chaosd.dat"
+	sqliteDriver string = "sqlite3"
+)
 
 // DB defines a db storage.
 type DB struct {
@@ -36,7 +39,13 @@ type DB struct {
 
 // NewDBStore returns a new DB
 func NewDBStore() (*DB, error) {
-	gormDB, err := gorm.Open(sqlite.Open(path.Join(utils.GetProgramPath(), dataFile)), &gorm.Config{
+	ref := sqlite.Open(path.Join(utils.GetProgramPath(), dataFile)).(sqlite.Dialector)
+	dsn := ref.DSN
+	// fix error `database is locked`, refer to https://github.com/mattn/go-sqlite3/blob/master/README.md#faq
+	if ref.DriverName == sqliteDriver {
+		dsn += "?cache=shared"
+	}
+	gormDB, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	if err != nil {
