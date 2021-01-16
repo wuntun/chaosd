@@ -20,6 +20,8 @@ import (
 
 const (
 	Created   = "created"
+	Waited    = "Waited"
+	Running   = "Running"
 	Success   = "success"
 	Error     = "error"
 	Destroyed = "destroyed"
