@@ -14,17 +14,11 @@
 package dbstore
 
 import (
-	"path"
-
+	"github.com/pingcap/log"
 	"go.uber.org/zap"
-
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-
-	"github.com/pingcap/log"
-
-	"github.com/chaos-mesh/chaosd/pkg/utils"
 )
 
 const dataFile = "chaosd.dat"
@@ -36,7 +30,8 @@ type DB struct {
 
 // NewDBStore returns a new DB
 func NewDBStore() (*DB, error) {
-	gormDB, err := gorm.Open(sqlite.Open(path.Join(utils.GetProgramPath(), dataFile)+"?cache=shared"), &gorm.Config{
+	// file := path.Join(utils.GetProgramPath(), dataFile)
+	gormDB, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	if err != nil {
@@ -56,19 +51,3 @@ func NewDBStore() (*DB, error) {
 
 	return db, nil
 }
-
-//func DryDBStore() (*DB, error) {
-//	gormDB, err := gorm.Open(sqlite.Open(path.Join(utils.GetProgramPath(), dataFile)), &gorm.Config{
-//		Logger: logger.Default.LogMode(logger.Silent),
-//	})
-//	if err != nil {
-//		log.Error("failed to open DB", zap.Error(err))
-//		return nil, err
-//	}
-//
-//	db := &DB{
-//		gormDB,
-//	}
-//
-//	return db, nil
-//}
