@@ -36,13 +36,19 @@ type DB struct {
 
 // NewDBStore returns a new DB
 func NewDBStore() (*DB, error) {
-	gormDB, err := gorm.Open(sqlite.Open(path.Join(utils.GetProgramPath(), dataFile)), &gorm.Config{
+	gormDB, err := gorm.Open(sqlite.Open(path.Join(utils.GetProgramPath(), dataFile)+"?cache=shared"), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	if err != nil {
 		log.Error("failed to open DB", zap.Error(err))
 		return nil, err
 	}
+	dbConn, err := gormDB.DB()
+	if err != nil {
+		log.Error("failed to get DB", zap.Error(err))
+		return nil, err
+	}
+	dbConn.SetMaxOpenConns(1)
 
 	db := &DB{
 		gormDB,

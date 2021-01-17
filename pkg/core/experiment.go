@@ -31,7 +31,7 @@ const (
 const (
 	ProcessAttack = "process"
 	NetworkAttack = "network"
-	StressAttack  = "stress"
+	StressAttack  = "StressChaos"
 )
 
 // ExperimentStore defines operations for working with experiments
@@ -47,6 +47,7 @@ type ExperimentStore interface {
 
 // Experiment represents an experiment instance.
 type Experiment struct {
+	Name      string    `gorm:"name"`
 	ID        uint      `gorm:"primary_key" json:"id"`
 	Uid       string    `gorm:"index:uid" json:"uid"`
 	CreatedAt time.Time `json:"created_at"`
