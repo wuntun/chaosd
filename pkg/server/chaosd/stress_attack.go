@@ -33,6 +33,7 @@ func (s *Server) StressAttackScheduler(attack *core.StressCommand) (string, erro
 	uid := uuid.New().String()
 	//create experiment
 	if err := s.exp.Set(context.Background(), &core.Experiment{
+		Name:           uid,
 		Uid:            uid,
 		Status:         core.Created,
 		Kind:           core.StressAttack,
@@ -168,6 +169,7 @@ func (s *Server) StressAttack(attack *core.StressCommand) (string, error) {
 	uid := uuid.New().String()
 
 	if err := s.exp.Set(context.Background(), &core.Experiment{
+		Name:           uid,
 		Uid:            uid,
 		Status:         core.Created,
 		Kind:           core.StressAttack,

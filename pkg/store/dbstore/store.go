@@ -38,6 +38,12 @@ func NewDBStore() (*DB, error) {
 		log.Error("failed to open DB", zap.Error(err))
 		return nil, err
 	}
+	dbConn, err := gormDB.DB()
+	if err != nil {
+		log.Error("failed to get DB", zap.Error(err))
+		return nil, err
+	}
+	dbConn.SetMaxOpenConns(1)
 
 	db := &DB{
 		gormDB,
